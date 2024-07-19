@@ -27,22 +27,6 @@ mainTab.newToggle("Full Bright", "Makes the player's screen brighter", false, fu
     end
 end)
 
--- New Godmode Button
-mainTab.newButton("Godmode", "Makes you unable to die basically", function()
-    local character = game.Players.LocalPlayer.Character
-    if character then
-        if character:FindFirstChild("Stat") then
-            character.Stat:Destroy()
-        end
-        if character:FindFirstChild("Health") then
-            character.Health:Destroy()
-        end
-        if character:FindFirstChild("FallDamage") then
-            character.FallDamage:Destroy()
-        end
-    end
-end)
-
 local espPlayersToggle
 local espLinesToggle
 local espDistanceToggle
