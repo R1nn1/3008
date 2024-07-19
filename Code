@@ -1,12 +1,319 @@
+local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
 
+local window = DrRayLibrary:Load("Rinns Hub", "Default")
 
-local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
-local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
+local mainTab = DrRayLibrary.newTab("Main Tab", "ImageIdHere")
 
-Notification:Notify(
-    {Title = "IMPORTANT", Description = "This script has not been made and will be made and fully updated tomorrow"},
-    {OutlineColor = Color3.fromRGB(80, 80, 80),Time = 10, Type = "option"},
-    {Image = "http://www.roblox.com/asset/?id=6023426923", ImageColor = Color3.fromRGB(255, 84, 84), Callback = function(State) print(tostring(State)) end}
-)
+-- Full Bright Functionality
+local fullBrightToggle
+local lighting = game:GetService("Lighting")
 
+local function enableFullBright()
+    lighting.Brightness = 2
+    lighting.GlobalShadows = false
+end
 
+local function disableFullBright()
+    lighting.Brightness = 1
+    lighting.GlobalShadows = true
+end
+
+mainTab.newToggle("Full Bright", "Makes the player's screen brighter", false, function(toggleState)
+    fullBrightToggle = toggleState
+    if toggleState then
+        enableFullBright()
+    else
+        disableFullBright()
+    end
+end)
+
+-- New Godmode Button
+mainTab.newButton("Godmode", "Makes you unable to die basically", function()
+    local character = game.Players.LocalPlayer.Character
+    if character then
+        if character:FindFirstChild("Stat") then
+            character.Stat:Destroy()
+        end
+        if character:FindFirstChild("Health") then
+            character.Health:Destroy()
+        end
+        if character:FindFirstChild("FallDamage") then
+            character.FallDamage:Destroy()
+        end
+    end
+end)
+
+local espPlayersToggle
+local espLinesToggle
+local espDistanceToggle
+local espFoodToggle
+local espFoodLinesToggle
+local espFoodDistanceToggle
+local autoWhistleToggle
+local whistleConnection
+local renderDistance = 1000
+local speed = 16
+
+-- Function to highlight all players
+local function highlightPlayers()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local highlight = Instance.new("Highlight")
+            highlight.Parent = player.Character
+        end
+    end
+end
+
+-- Function to remove player highlights
+local function removePlayerHighlights()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character then
+            for _, child in pairs(player.Character:GetChildren()) do
+                if child:IsA("Highlight") then
+                    child:Destroy()
+                end
+            end
+        end
+    end
+end
+
+-- Function to draw lines to all players
+local function drawLinesToPlayers()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local attachment0 = Instance.new("Attachment")
+            attachment0.Parent = game.Players.LocalPlayer.Character.HumanoidRootPart
+            local attachment1 = Instance.new("Attachment")
+            attachment1.Parent = player.Character.HumanoidRootPart
+
+            local line = Instance.new("Beam")
+            line.Attachment0 = attachment0
+            line.Attachment1 = attachment1
+            line.Parent = game.Players.LocalPlayer.Character
+        end
+    end
+end
+
+-- Function to remove lines to players
+local function removeLinesToPlayers()
+    for _, child in pairs(game.Players.LocalPlayer.Character:GetChildren()) do
+        if child:IsA("Beam") then
+            child:Destroy()
+        end
+    end
+end
+
+-- Function to show distance to all players
+local function showDistanceToPlayers()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).magnitude
+            local billboard = Instance.new("BillboardGui")
+            billboard.Adornee = player.Character.HumanoidRootPart
+            billboard.Size = UDim2.new(0, 100, 0, 50)
+            billboard.StudsOffset = Vector3.new(0, 3, 0)
+            local textLabel = Instance.new("TextLabel")
+            textLabel.Parent = billboard
+            textLabel.Text = tostring(math.floor(distance)) .. " studs"
+            textLabel.Size = UDim2.new(1, 0, 1, 0)
+            textLabel.BackgroundTransparency = 1
+            textLabel.TextColor3 = Color3.new(1, 1, 1)
+            billboard.Parent = player.Character
+        end
+    end
+end
+
+-- Function to remove distance labels to players
+local function removeDistanceToPlayers()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character then
+            for _, child in pairs(player.Character:GetChildren()) do
+                if child:IsA("BillboardGui") then
+                    child:Destroy()
+                end
+            end
+        end
+    end
+end
+
+-- Function to highlight all food items
+local function highlightFood()
+    for _, item in pairs(workspace.GameObjects.Physical.Items:GetChildren()) do
+        for _, partName in ipairs({"Root", "Handle", "Apple", "Burger", "Pizza"}) do
+            local part = item:FindFirstChild(partName)
+            if part then
+                local highlight = Instance.new("Highlight")
+                highlight.Parent = part
+                break
+            end
+        end
+    end
+end
+
+-- Function to remove food highlights
+local function removeFoodHighlights()
+    for _, item in pairs(workspace.GameObjects.Physical.Items:GetChildren()) do
+        for _, partName in ipairs({"Root", "Handle", "Apple", "Burger", "Pizza"}) do
+            local part = item:FindFirstChild(partName)
+            if part then
+                for _, child in pairs(part:GetChildren()) do
+                    if child:IsA("Highlight") then
+                        child:Destroy()
+                    end
+                end
+                break
+            end
+        end
+    end
+end
+
+-- Function to draw lines to all food items
+local function drawLinesToFood()
+    for _, item in pairs(workspace.GameObjects.Physical.Items:GetChildren()) do
+        for _, partName in ipairs({"Root", "Handle", "Apple", "Burger", "Pizza"}) do
+            local part = item:FindFirstChild(partName)
+            if part then
+                local attachment0 = Instance.new("Attachment")
+                attachment0.Parent = game.Players.LocalPlayer.Character.HumanoidRootPart
+                local attachment1 = Instance.new("Attachment")
+                attachment1.Parent = part
+
+                local line = Instance.new("Beam")
+                line.Attachment0 = attachment0
+                line.Attachment1 = attachment1
+                line.Parent = game.Players.LocalPlayer.Character
+                break
+            end
+        end
+    end
+end
+
+-- Function to remove lines to food items
+local function removeLinesToFood()
+    for _, child in pairs(game.Players.LocalPlayer.Character:GetChildren()) do
+        if child:IsA("Beam") then
+            child:Destroy()
+        end
+    end
+end
+
+-- Function to show distance to all food items
+local function showDistanceToFood()
+    for _, item in pairs(workspace.GameObjects.Physical.Items:GetChildren()) do
+        for _, partName in ipairs({"Root", "Handle", "Apple", "Burger", "Pizza"}) do
+            local part = item:FindFirstChild(partName)
+            if part then
+                local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - part.Position).magnitude
+                local billboard = Instance.new("BillboardGui")
+                billboard.Adornee = part
+                billboard.Size = UDim2.new(0, 100, 0, 50)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                local textLabel = Instance.new("TextLabel")
+                textLabel.Parent = billboard
+                textLabel.Text = tostring(math.floor(distance)) .. " studs"
+                textLabel.Size = UDim2.new(1, 0, 1, 0)
+                textLabel.BackgroundTransparency = 1
+                textLabel.TextColor3 = Color3.new(1, 1, 1)
+                billboard.Parent = part
+                break
+            end
+        end
+    end
+end
+
+-- Function to remove distance labels to food items
+local function removeDistanceToFood()
+    for _, item in pairs(workspace.GameObjects.Physical.Items:GetChildren()) do
+        for _, partName in ipairs({"Root", "Handle", "Apple", "Burger", "Pizza"}) do
+            local part = item:FindFirstChild(partName)
+            if part then
+                for _, child in pairs(part:GetChildren()) do
+                    if child:IsA("BillboardGui") then
+                        child:Destroy()
+                    end
+                end
+                break
+            end
+        end
+    end
+end
+
+local espTab = DrRayLibrary.newTab("Esp Tab", "ImageIdHere")
+
+espTab.newToggle("Esp Players", "Shows where every player is", true, function(toggleState)
+    espPlayersToggle = toggleState
+    if toggleState then
+        highlightPlayers()
+    else
+        removePlayerHighlights()
+    end
+end)
+
+espTab.newToggle("Esp Player Lines", "Draws a line to every player", true, function(toggleState)
+    espLinesToggle = toggleState
+    if toggleState then
+        drawLinesToPlayers()
+    else
+        removeLinesToPlayers()
+    end
+end)
+
+espTab.newToggle("Esp Player Distance", "Shows distance to every player", true, function(toggleState)
+    espDistanceToggle = toggleState
+    if toggleState then
+        showDistanceToPlayers()
+    else
+        removeDistanceToPlayers()
+    end
+end)
+
+espTab.newToggle("Esp Food", "Shows where every food is", true, function(toggleState)
+    espFoodToggle = toggleState
+    if toggleState then
+        highlightFood()
+    else
+        removeFoodHighlights()
+    end
+end)
+
+espTab.newToggle("Esp Food Lines", "Draws a line to every food item", true, function(toggleState)
+    espFoodLinesToggle = toggleState
+    if toggleState then
+        drawLinesToFood()
+    else
+        removeLinesToFood()
+    end
+end)
+
+espTab.newToggle("Esp Food Distance", "Shows distance to every food item", true, function(toggleState)
+    espFoodDistanceToggle = toggleState
+    if toggleState then
+        showDistanceToFood()
+    else
+        removeDistanceToFood()
+    end
+end)
+
+espTab.newSlider("Render Distance", "The Render Distance for all the esps", 100000, false, function(num)
+    renderDistance = num
+
+    -- Update any ESP based on new render distance here if necessary
+end)
+
+local miscTab = DrRayLibrary.newTab("Misc Tab", "ImageIdHere")
+
+miscTab.newToggle("Auto Whistle", "Automatically whistles for you when the cooldown is over", true, function(toggleState)
+    autoWhistleToggle = toggleState
+    if toggleState then
+        whistleConnection = game:GetService("RunService").Stepped:Connect(function()
+            local args = {
+                [1] = "Whistle"
+            }
+            game:GetService("Players").LocalPlayer.Character.System.Action:InvokeServer(unpack(args))
+        end)
+    else
+        if whistleConnection then
+            whistleConnection:Disconnect()
+        end
+    end
+end)
